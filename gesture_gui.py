@@ -393,26 +393,42 @@ class GestureSettingsGUI:
             self.settings_window.after(7000, on_recording_complete)  # 3s countdown + 3s recording + 1s buffer
 
     def update_status(self):
-        """Update the status display"""
-        if not hasattr(self, 'status_label'):
+        """Update the status display safely"""
+        if not hasattr(self, 'status_label') or not self.status_label:
+            return
+
+        try:
+            # Check if the widget still exists
+            self.status_label.winfo_exists()
+        except tk.TclError:
+            # Widget has been destroyed
             return
 
         if not self.profile_manager.current_profile:
-            self.status_label.config(text="❌ No profile selected - Create or select a profile to get started")
+            try:
+                self.status_label.config(text="❌ No profile selected - Create or select a profile to get started")
+            except tk.TclError:
+                pass
             return
 
         profile_data = self.profile_manager.get_current_profile_data()
         if not profile_data:
-            self.status_label.config(text="❌ Profile data not available")
+            try:
+                self.status_label.config(text="❌ Profile data not available")
+            except tk.TclError:
+                pass
             return
 
         total_gestures = len(profile_data.get('gestures', {}))
-        active_gestures = len(profile_data.get('active_gestures', []))
 
-        if total_gestures == 0:
-            self.status_label.config(text=f"✅ Profile '{self.profile_manager.current_profile}' loaded - Add gestures to get started")
-        else:
-            self.status_label.config(text=f"✅ Profile '{self.profile_manager.current_profile}' - {total_gestures} gestures ready")
+        try:
+            if total_gestures == 0:
+                self.status_label.config(text=f"✅ Profile '{self.profile_manager.current_profile}' loaded - Add gestures to get started")
+            else:
+                self.status_label.config(text=f"✅ Profile '{self.profile_manager.current_profile}' - {total_gestures} gestures ready")
+        except tk.TclError:
+            # Widget has been destroyed, ignore
+            pass
 
     def save_current_profile(self):
         """Save the current profile"""
@@ -458,9 +474,11 @@ class GestureSettingsGUI:
                            f"All {len(gestures)} gestures are ready to use.\n"
                            f"Press 'p' in the camera window to see profile selector.")
 
+        # Update status before closing window
+        self.update_status()
+
         # Close settings window
         self.close_settings_window()
-        self.update_status()
 
     def open_profile_selector(self):
         """Open simplified profile selector window (triggered by 'p' key)"""
@@ -891,7 +909,12 @@ class GestureSettingsGUI:
         """Internal method to update status label (called from main thread)"""
         if hasattr(self, 'recording_status_label') and self.recording_status_label:
             try:
+                # Check if widget still exists
+                self.recording_status_label.winfo_exists()
                 self.recording_status_label.config(text=message, foreground=color)
+            except tk.TclError:
+                # Widget has been destroyed, ignore
+                pass
             except Exception as e:
                 print(f"Warning: Could not update status label: {e}")
     
@@ -906,11 +929,21 @@ class GestureSettingsGUI:
         """Internal method to reset GUI elements (called from main thread)"""
         try:
             if hasattr(self, 'record_button') and self.record_button:
-                self.record_button.config(state='normal', text="🔴 Start Recording")
-            if hasattr(self, 'recording_status_label') and self.recording_status_label:
-                self.recording_status_label.config(text="Ready to record gesture", foreground='black')
+                self.record_button.winfo_exists()
+                self.record_button.config(state='normal', text="🔴 Record Gesture")
+        except tk.TclError:
+            pass
         except Exception as e:
-            print(f"Warning: Could not reset GUI elements: {e}")
+            print(f"Warning: Could not reset record button: {e}")
+
+        try:
+            if hasattr(self, 'recording_status_label') and self.recording_status_label:
+                self.recording_status_label.winfo_exists()
+                self.recording_status_label.config(text="Ready to record gesture", foreground='black')
+        except tk.TclError:
+            pass
+        except Exception as e:
+            print(f"Warning: Could not reset status label: {e}")
     
     def start_gesture_recording_gui(self):
         """Start gesture recording from GUI"""

@@ -331,12 +331,18 @@ class GestureRecognitionEngine:
             elif key_binding.lower() in self.get_special_keys():
                 # Handle special keys
                 special_key = self.get_special_keys()[key_binding.lower()]
-                self.keyboard_controller.press(special_key)
-                self.keyboard_controller.release(special_key)
+                if special_key:  # Make sure the key exists
+                    self.keyboard_controller.press(special_key)
+                    self.keyboard_controller.release(special_key)
+                else:
+                    print(f"⚠️  Special key '{key_binding}' not available")
             else:
-                # Handle regular keys
-                self.keyboard_controller.press(key_binding)
-                self.keyboard_controller.release(key_binding)
+                # Handle regular keys - validate first
+                if len(key_binding) == 1 or key_binding.isalnum():
+                    self.keyboard_controller.press(key_binding)
+                    self.keyboard_controller.release(key_binding)
+                else:
+                    print(f"⚠️  Invalid key binding: '{key_binding}'")
 
             # Update throttling info
             self.last_executed_gesture = gesture_name
@@ -348,6 +354,9 @@ class GestureRecognitionEngine:
 
     def get_special_keys(self):
         """Get dictionary of special keys"""
+        if not PYNPUT_AVAILABLE:
+            return {}
+
         return {
             'space': pynput.keyboard.Key.space,
             'enter': pynput.keyboard.Key.enter,
@@ -365,14 +374,11 @@ class GestureRecognitionEngine:
             'end': pynput.keyboard.Key.end,
             'page_up': pynput.keyboard.Key.page_up,
             'page_down': pynput.keyboard.Key.page_down,
-            'insert': pynput.keyboard.Key.insert,
             'shift': pynput.keyboard.Key.shift,
             'ctrl': pynput.keyboard.Key.ctrl,
             'alt': pynput.keyboard.Key.alt,
             'cmd': pynput.keyboard.Key.cmd,
             'caps_lock': pynput.keyboard.Key.caps_lock,
-            'num_lock': pynput.keyboard.Key.num_lock,
-            'scroll_lock': pynput.keyboard.Key.scroll_lock,
             'f1': pynput.keyboard.Key.f1,
             'f2': pynput.keyboard.Key.f2,
             'f3': pynput.keyboard.Key.f3,
