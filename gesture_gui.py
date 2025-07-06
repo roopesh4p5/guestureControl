@@ -129,9 +129,16 @@ class GestureSettingsGUI:
         instructions = ttk.Label(gesture_section,
                                text="Add gestures one by one. Each gesture will be recorded with a 3-2-1 countdown.\n"
                                     "• Single: Use one hand only\n"
-                                    "• Both: Use both hands together (great for numbers 6-10)",
+                                    "• Both: Use both hands together (great for numbers 6-10)\n"
+                                    "• Multiple gestures can use the same key binding",
                                font=('Arial', 10), foreground='darkblue')
         instructions.pack(pady=(0, 10))
+
+        # Key binding help
+        key_help = ttk.Label(gesture_section,
+                           text="Key Examples: 'a', 'space', 'enter', 'shift', 'ctrl+c', 'alt+tab', 'f1', 'up', 'down'",
+                           font=('Arial', 9), foreground='gray')
+        key_help.pack(pady=(0, 5))
 
         # Add gesture form
         add_frame = ttk.Frame(gesture_section)
@@ -319,6 +326,32 @@ class GestureSettingsGUI:
             if not result:
                 return
 
+        # Check if key binding is already used by another gesture
+        if profile_data:
+            existing_bindings = profile_data.get('bindings', {})
+            conflicting_gestures = [g_name for g_name, g_key in existing_bindings.items()
+                                  if g_key == key_binding and g_name != gesture_name]
+
+            if conflicting_gestures:
+                conflict_list = ', '.join(conflicting_gestures)
+                result = messagebox.askyesnocancel(
+                    "Key Binding Conflict",
+                    f"Key '{key_binding}' is already bound to: {conflict_list}\n\n"
+                    f"Do you want to bind '{gesture_name}' to the same key?\n\n"
+                    f"Yes: Add another gesture with same key\n"
+                    f"No: Choose a different key\n"
+                    f"Cancel: Stop recording"
+                )
+
+                if result is None:  # Cancel
+                    return
+                elif result is False:  # No - choose different key
+                    messagebox.showinfo("Choose Different Key",
+                                      f"Please enter a different key binding for '{gesture_name}'")
+                    self.key_binding_entry.focus()
+                    return
+                # If Yes, continue with the recording
+
         # Get hand type
         hand_type = self.hand_type_var.get()
 
@@ -430,21 +463,20 @@ class GestureSettingsGUI:
         self.update_status()
 
     def open_profile_selector(self):
-        """Open profile selector window (triggered by 'p' key)"""
+        """Open simplified profile selector window (triggered by 'p' key)"""
         # Create profile selector window
         selector_window = tk.Toplevel(self.root if self.root else None)
         selector_window.title("🎮 Profile Selector")
-        selector_window.geometry("600x500")
-        selector_window.transient(self.root if self.root else None)
+        selector_window.geometry("500x400")
 
         # Center the window
         selector_window.update_idletasks()
-        x = (selector_window.winfo_screenwidth() // 2) - (600 // 2)
-        y = (selector_window.winfo_screenheight() // 2) - (500 // 2)
-        selector_window.geometry(f"600x500+{x}+{y}")
+        x = (selector_window.winfo_screenwidth() // 2) - (500 // 2)
+        y = (selector_window.winfo_screenheight() // 2) - (400 // 2)
+        selector_window.geometry(f"500x400+{x}+{y}")
 
         # Title
-        title_label = ttk.Label(selector_window, text="🎮 Select Profile to Activate",
+        title_label = ttk.Label(selector_window, text="🎮 Profile Selector",
                                font=('Arial', 16, 'bold'))
         title_label.pack(pady=15)
 
@@ -464,15 +496,12 @@ class GestureSettingsGUI:
         list_frame = ttk.LabelFrame(selector_window, text="Available Profiles", padding=15)
         list_frame.pack(fill='both', expand=True, padx=20, pady=10)
 
-        # Create profile list with details
-        self.create_profile_list(list_frame, selector_window)
+        # Create simple profile list
+        self.create_simple_profile_list(list_frame, selector_window)
 
-        # Buttons
+        # Bottom buttons
         button_frame = ttk.Frame(selector_window)
         button_frame.pack(fill='x', padx=20, pady=10)
-
-        ttk.Button(button_frame, text="✅ Activate Selected",
-                  command=lambda: self.activate_selected_profile(selector_window)).pack(side='left', padx=5)
 
         ttk.Button(button_frame, text="⚙️ Open Settings",
                   command=lambda: self.open_settings_from_selector(selector_window)).pack(side='left', padx=5)
@@ -484,9 +513,17 @@ class GestureSettingsGUI:
         selector_window.focus_set()
         selector_window.grab_set()
 
-    def create_profile_list(self, parent, selector_window):
-        """Create detailed profile list"""
-        # Create canvas for scrolling
+    def create_simple_profile_list(self, parent, selector_window):
+        """Create simple profile list with Load/Delete buttons"""
+        # Get profiles quickly
+        profiles = self.profile_manager.get_profile_names()
+
+        if not profiles:
+            ttk.Label(parent, text="No profiles available.\nCreate one in Settings.",
+                     font=('Arial', 12), foreground='gray').pack(pady=20)
+            return
+
+        # Create scrollable frame
         canvas = tk.Canvas(parent)
         scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
@@ -500,101 +537,125 @@ class GestureSettingsGUI:
         canvas.configure(yscrollcommand=scrollbar.set)
 
         # Add profiles
-        profiles = self.profile_manager.get_profile_names()
-        self.profile_selection_var = tk.StringVar()
-
-        if not profiles:
-            ttk.Label(scrollable_frame, text="No profiles available. Create one in Settings.",
-                     font=('Arial', 12), foreground='gray').pack(pady=20)
-        else:
-            for profile_name in profiles:
-                self.create_profile_card(scrollable_frame, profile_name)
+        for profile_name in profiles:
+            self.create_simple_profile_row(scrollable_frame, profile_name, selector_window)
 
         # Pack canvas and scrollbar
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Store reference for activation
-        self.selector_window = selector_window
+    def create_simple_profile_row(self, parent, profile_name, selector_window):
+        """Create a simple row for each profile"""
+        # Create row frame
+        row_frame = ttk.Frame(parent)
+        row_frame.pack(fill='x', pady=5, padx=5)
 
-    def create_profile_card(self, parent, profile_name):
-        """Create a card for each profile showing its gestures"""
-        # Load profile data
-        profile_data = None
-        if profile_name in self.profile_manager.profiles:
-            profile_data = self.profile_manager.profiles[profile_name]['data']
+        # Profile info frame
+        info_frame = ttk.Frame(row_frame)
+        info_frame.pack(side='left', fill='x', expand=True)
 
-        # Create card frame
-        card_frame = ttk.LabelFrame(parent, text=f"📁 {profile_name}", padding=10)
-        card_frame.pack(fill='x', pady=5, padx=5)
+        # Profile name
+        name_label = ttk.Label(info_frame, text=f"📁 {profile_name}",
+                              font=('Arial', 12, 'bold'))
+        name_label.pack(anchor='w')
 
-        # Radio button for selection
-        radio = ttk.Radiobutton(card_frame, text=f"Select {profile_name}",
-                               variable=self.profile_selection_var, value=profile_name)
-        radio.pack(anchor='w')
+        # Quick gesture count using basic info
+        try:
+            basic_info = self.profile_manager.get_profile_basic_info(profile_name)
+            if basic_info:
+                gesture_count = basic_info.get('gesture_count', 0)
+                count_text = f"{gesture_count} gestures"
 
-        # Set current profile as selected
+                # Add description if available
+                description = basic_info.get('description', '')
+                if description and len(description) > 0:
+                    # Truncate long descriptions
+                    if len(description) > 30:
+                        description = description[:30] + "..."
+                    count_text += f" • {description}"
+            else:
+                count_text = "No info available"
+        except:
+            count_text = "Loading..."
+
+        count_label = ttk.Label(info_frame, text=count_text,
+                               font=('Arial', 10), foreground='gray')
+        count_label.pack(anchor='w')
+
+        # Current profile indicator
         if profile_name == self.profile_manager.current_profile:
-            self.profile_selection_var.set(profile_name)
+            status_label = ttk.Label(info_frame, text="✅ Currently Active",
+                                   font=('Arial', 10), foreground='green')
+            status_label.pack(anchor='w')
 
-        # Show gestures if available
-        if profile_data:
-            gestures = profile_data.get('gestures', {})
-            bindings = profile_data.get('bindings', {})
+        # Buttons frame
+        button_frame = ttk.Frame(row_frame)
+        button_frame.pack(side='right', padx=(10, 0))
 
-            if gestures:
-                gesture_frame = ttk.Frame(card_frame)
-                gesture_frame.pack(fill='x', pady=(5, 0))
+        # Load button
+        load_button = ttk.Button(button_frame, text="📂 Load",
+                                command=lambda: self.load_profile_quick(profile_name, selector_window))
+        load_button.pack(side='top', pady=2)
 
-                ttk.Label(gesture_frame, text="Gestures:",
-                         font=('Arial', 10, 'bold')).pack(anchor='w')
+        # Delete button
+        delete_button = ttk.Button(button_frame, text="🗑️ Delete",
+                                  command=lambda: self.delete_profile_quick(profile_name, selector_window))
+        delete_button.pack(side='top', pady=2)
 
-                # Show first few gestures
-                gesture_list = list(gestures.items())[:5]  # Show max 5
-                for gesture_name, gesture_data in gesture_list:
-                    key_binding = bindings.get(gesture_name, "?")
-                    gesture_text = f"  • {gesture_name} → {key_binding}"
-                    ttk.Label(gesture_frame, text=gesture_text,
-                             font=('Arial', 9)).pack(anchor='w')
+        # Separator
+        ttk.Separator(parent, orient='horizontal').pack(fill='x', pady=5)
 
-                if len(gestures) > 5:
-                    ttk.Label(gesture_frame, text=f"  ... and {len(gestures) - 5} more",
-                             font=('Arial', 9), foreground='gray').pack(anchor='w')
+    def load_profile_quick(self, profile_name, selector_window):
+        """Quickly load and activate a profile"""
+        try:
+            # Load profile
+            if self.profile_manager.load_profile(profile_name):
+                # Activate all gestures in the profile
+                profile_data = self.profile_manager.get_current_profile_data()
+                if profile_data:
+                    gestures = profile_data.get('gestures', {})
+                    profile_data['active_gestures'] = list(gestures.keys())
+                    self.profile_manager.save_profile(profile_name, profile_data)
 
-                # Total count
-                total_label = ttk.Label(gesture_frame,
-                                       text=f"Total: {len(gestures)} gestures",
-                                       font=('Arial', 9, 'bold'), foreground='blue')
-                total_label.pack(anchor='w', pady=(2, 0))
+                    # Show success message
+                    messagebox.showinfo("Profile Loaded",
+                                       f"✅ Profile '{profile_name}' loaded and activated!\n\n"
+                                       f"🎮 {len(gestures)} gestures ready to use.")
+
+                    # Close selector window
+                    selector_window.destroy()
+
+                    # Update any open settings window
+                    self.update_profile_labels()
+                else:
+                    messagebox.showerror("Error", "Failed to load profile data")
             else:
-                ttk.Label(card_frame, text="No gestures recorded",
-                         font=('Arial', 9), foreground='gray').pack(anchor='w', pady=(5, 0))
+                messagebox.showerror("Error", "Failed to load profile")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load profile: {e}")
 
-    def activate_selected_profile(self, selector_window):
-        """Activate the selected profile"""
-        selected = self.profile_selection_var.get()
-        if not selected:
-            messagebox.showwarning("No Selection", "Please select a profile to activate")
-            return
+    def delete_profile_quick(self, profile_name, selector_window):
+        """Quickly delete a profile with confirmation"""
+        result = messagebox.askyesno("Confirm Delete",
+                                   f"Are you sure you want to delete profile '{profile_name}'?\n\n"
+                                   f"This action cannot be undone.")
+        if result:
+            try:
+                if self.profile_manager.delete_profile(profile_name):
+                    messagebox.showinfo("Success", f"Profile '{profile_name}' deleted successfully!")
 
-        if self.profile_manager.load_profile(selected):
-            # Activate all gestures in the profile
-            profile_data = self.profile_manager.get_current_profile_data()
-            if profile_data:
-                gestures = profile_data.get('gestures', {})
-                profile_data['active_gestures'] = list(gestures.keys())
-                self.profile_manager.save_profile(selected, profile_data)
+                    # Refresh the profile list
+                    selector_window.destroy()
+                    self.open_profile_selector()  # Reopen with updated list
 
-                messagebox.showinfo("Profile Activated",
-                                   f"Profile '{selected}' is now active!\n\n"
-                                   f"{len(gestures)} gestures ready to use.")
+                    # Update any open settings window
+                    self.update_profile_labels()
+                else:
+                    messagebox.showerror("Error", "Failed to delete profile")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to delete profile: {e}")
 
-                selector_window.destroy()
-                self.update_profile_labels()
-            else:
-                messagebox.showerror("Error", "Failed to load profile data")
-        else:
-            messagebox.showerror("Error", "Failed to activate profile")
+    # Old complex profile list methods removed - using simplified version
 
     def open_settings_from_selector(self, selector_window):
         """Open settings window from profile selector"""

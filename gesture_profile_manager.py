@@ -90,27 +90,36 @@ class GestureProfileManager:
         return False
     
     def load_all_profiles(self):
-        """Load all available profiles"""
+        """Load all available profiles with basic info for fast access"""
         self.profiles = {}
-        
+
         if not os.path.exists(self.profiles_dir):
             return
-        
+
         for filename in os.listdir(self.profiles_dir):
             if filename.endswith('.json'):
                 filepath = os.path.join(self.profiles_dir, filename)
                 try:
                     with open(filepath, 'r') as f:
                         profile_data = json.load(f)
-                    
+
                     profile_name = profile_data.get('name', filename[:-5])
+
+                    # Store full data and basic info for quick access
                     self.profiles[profile_name] = {
                         'data': profile_data,
-                        'filepath': filepath
+                        'filepath': filepath,
+                        'basic_info': {
+                            'name': profile_name,
+                            'gesture_count': len(profile_data.get('gestures', {})),
+                            'description': profile_data.get('description', ''),
+                            'created_at': profile_data.get('created_at', 0),
+                            'modified_at': profile_data.get('modified_at', 0)
+                        }
                     }
                 except Exception as e:
                     print(f"⚠️  Error loading profile {filename}: {e}")
-        
+
         print(f"📁 Loaded {len(self.profiles)} profiles")
     
     def delete_profile(self, name: str):
@@ -210,3 +219,16 @@ class GestureProfileManager:
             profile_data = self.profiles[profile_name]['data']
             return profile_data.get('template_gestures', {})
         return {}
+
+    def get_profile_basic_info(self, profile_name: str):
+        """Get basic profile info without loading full data"""
+        if profile_name in self.profiles:
+            return self.profiles[profile_name].get('basic_info', {})
+        return {}
+
+    def get_all_profiles_basic_info(self):
+        """Get basic info for all profiles"""
+        basic_info = {}
+        for profile_name, profile_info in self.profiles.items():
+            basic_info[profile_name] = profile_info.get('basic_info', {})
+        return basic_info

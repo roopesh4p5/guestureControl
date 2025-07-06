@@ -99,11 +99,12 @@ python main.py
 - Click "💾 Save Profile" when done adding gestures
 - Click "🎮 Activate Profile" to use all gestures
 
-### 6. Switch Between Profiles
-- Press 'p' in camera window to open Profile Selector
-- See all profiles with their gestures and key bindings
-- Select and activate any profile
-- All gestures in that profile become active
+### 6. Switch Between Profiles (Press 'p')
+- Press 'p' in camera window to open **fast Profile Selector**
+- See all profiles with gesture counts and descriptions
+- **📂 Load**: Instantly load and activate profile
+- **🗑️ Delete**: Remove profile with confirmation
+- **Fast Loading**: Optimized for quick profile switching
 
 ## 🎮 Example Usage Scenarios
 

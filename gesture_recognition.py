@@ -324,21 +324,17 @@ class GestureRecognitionEngine:
 
         key_binding = gesture_bindings[gesture_name]
         try:
-            if key_binding.lower() in ['space', 'enter', 'tab', 'esc', 'backspace', 'up', 'down', 'left', 'right']:
-                special_keys = {
-                    'space': pynput.keyboard.Key.space,
-                    'enter': pynput.keyboard.Key.enter,
-                    'tab': pynput.keyboard.Key.tab,
-                    'esc': pynput.keyboard.Key.esc,
-                    'backspace': pynput.keyboard.Key.backspace,
-                    'up': pynput.keyboard.Key.up,
-                    'down': pynput.keyboard.Key.down,
-                    'left': pynput.keyboard.Key.left,
-                    'right': pynput.keyboard.Key.right
-                }
-                self.keyboard_controller.press(special_keys[key_binding.lower()])
-                self.keyboard_controller.release(special_keys[key_binding.lower()])
+            # Handle special keys and combinations
+            if '+' in key_binding:
+                # Handle key combinations like ctrl+c, shift+a, etc.
+                self.execute_key_combination(key_binding)
+            elif key_binding.lower() in self.get_special_keys():
+                # Handle special keys
+                special_key = self.get_special_keys()[key_binding.lower()]
+                self.keyboard_controller.press(special_key)
+                self.keyboard_controller.release(special_key)
             else:
+                # Handle regular keys
                 self.keyboard_controller.press(key_binding)
                 self.keyboard_controller.release(key_binding)
 
@@ -349,6 +345,96 @@ class GestureRecognitionEngine:
             print(f"🎮 Executed: {gesture_name} -> {key_binding}")
         except Exception as e:
             print(f"❌ Error executing gesture action: {e}")
+
+    def get_special_keys(self):
+        """Get dictionary of special keys"""
+        return {
+            'space': pynput.keyboard.Key.space,
+            'enter': pynput.keyboard.Key.enter,
+            'return': pynput.keyboard.Key.enter,
+            'tab': pynput.keyboard.Key.tab,
+            'esc': pynput.keyboard.Key.esc,
+            'escape': pynput.keyboard.Key.esc,
+            'backspace': pynput.keyboard.Key.backspace,
+            'delete': pynput.keyboard.Key.delete,
+            'up': pynput.keyboard.Key.up,
+            'down': pynput.keyboard.Key.down,
+            'left': pynput.keyboard.Key.left,
+            'right': pynput.keyboard.Key.right,
+            'home': pynput.keyboard.Key.home,
+            'end': pynput.keyboard.Key.end,
+            'page_up': pynput.keyboard.Key.page_up,
+            'page_down': pynput.keyboard.Key.page_down,
+            'insert': pynput.keyboard.Key.insert,
+            'shift': pynput.keyboard.Key.shift,
+            'ctrl': pynput.keyboard.Key.ctrl,
+            'alt': pynput.keyboard.Key.alt,
+            'cmd': pynput.keyboard.Key.cmd,
+            'caps_lock': pynput.keyboard.Key.caps_lock,
+            'num_lock': pynput.keyboard.Key.num_lock,
+            'scroll_lock': pynput.keyboard.Key.scroll_lock,
+            'f1': pynput.keyboard.Key.f1,
+            'f2': pynput.keyboard.Key.f2,
+            'f3': pynput.keyboard.Key.f3,
+            'f4': pynput.keyboard.Key.f4,
+            'f5': pynput.keyboard.Key.f5,
+            'f6': pynput.keyboard.Key.f6,
+            'f7': pynput.keyboard.Key.f7,
+            'f8': pynput.keyboard.Key.f8,
+            'f9': pynput.keyboard.Key.f9,
+            'f10': pynput.keyboard.Key.f10,
+            'f11': pynput.keyboard.Key.f11,
+            'f12': pynput.keyboard.Key.f12,
+        }
+
+    def execute_key_combination(self, key_combination):
+        """Execute key combinations like ctrl+c, shift+a, etc."""
+        parts = key_combination.lower().split('+')
+        if len(parts) < 2:
+            return
+
+        # Parse modifier keys and main key
+        modifiers = []
+        main_key = parts[-1]
+
+        for modifier in parts[:-1]:
+            if modifier in ['ctrl', 'control']:
+                modifiers.append(pynput.keyboard.Key.ctrl)
+            elif modifier in ['shift']:
+                modifiers.append(pynput.keyboard.Key.shift)
+            elif modifier in ['alt']:
+                modifiers.append(pynput.keyboard.Key.alt)
+            elif modifier in ['cmd', 'super']:
+                modifiers.append(pynput.keyboard.Key.cmd)
+
+        # Get the main key
+        if main_key in self.get_special_keys():
+            main_key_obj = self.get_special_keys()[main_key]
+        else:
+            main_key_obj = main_key
+
+        # Execute combination
+        try:
+            # Press modifiers
+            for modifier in modifiers:
+                self.keyboard_controller.press(modifier)
+
+            # Press main key
+            self.keyboard_controller.press(main_key_obj)
+            self.keyboard_controller.release(main_key_obj)
+
+            # Release modifiers
+            for modifier in reversed(modifiers):
+                self.keyboard_controller.release(modifier)
+
+        except Exception as e:
+            print(f"❌ Error executing key combination: {e}")
+            # Try to release all keys in case of error
+            try:
+                for modifier in modifiers:
+                    self.keyboard_controller.release(modifier)
+            except:
+                pass
     
     def analyze_hand(self, landmarks, hand_label, custom_gestures=None, active_gestures=None, gesture_bindings=None):
         """Analyze a single hand and return comprehensive data"""
