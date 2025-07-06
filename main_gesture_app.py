@@ -45,6 +45,7 @@ class ComprehensiveHandGestureAnalyzer:
         # Hand data storage
         self.left_hand_data = None
         self.right_hand_data = None
+        self.both_hands_gesture_data = None
         
         print("✅ Analyzer initialized with Profile Collections!")
         self.print_controls()
@@ -111,13 +112,48 @@ class ComprehensiveHandGestureAnalyzer:
     def analyze_hands_for_recording(self, frame):
         """Analyze both hands for recording purposes"""
         if self.gesture_recorder.is_recording():
-            # Capture finger states during recording
-            if self.left_hand_data:
-                finger_states = [finger['state'] for finger in self.left_hand_data['fingers']]
-                self.gesture_recorder.add_recording_data(finger_states)
-            elif self.right_hand_data:
-                finger_states = [finger['state'] for finger in self.right_hand_data['fingers']]
-                self.gesture_recorder.add_recording_data(finger_states)
+            # Check if we're recording a both-hand gesture
+            if hasattr(self.gesture_recorder, 'recording_hand_type') and self.gesture_recorder.recording_hand_type == 'both':
+                # For both-hand recording, we need both hands
+                if self.left_hand_data and self.right_hand_data:
+                    left_finger_states = [finger['state'] for finger in self.left_hand_data['fingers']]
+                    right_finger_states = [finger['state'] for finger in self.right_hand_data['fingers']]
+
+                    # Combine patterns for both-hand recording
+                    left_pattern = [1 if state > 0.5 else 0 for state in left_finger_states]
+                    right_pattern = [1 if state > 0.5 else 0 for state in right_finger_states]
+                    total_fingers = sum(left_pattern) + sum(right_pattern)
+                    combined_pattern = [total_fingers] + left_pattern + right_pattern
+
+                    self.gesture_recorder.add_recording_data(combined_pattern)
+            else:
+                # Single hand recording
+                if self.left_hand_data:
+                    finger_states = [finger['state'] for finger in self.left_hand_data['fingers']]
+                    self.gesture_recorder.add_recording_data(finger_states)
+                elif self.right_hand_data:
+                    finger_states = [finger['state'] for finger in self.right_hand_data['fingers']]
+                    self.gesture_recorder.add_recording_data(finger_states)
+
+    def analyze_both_hands_gesture(self, profile_data, custom_gestures, active_gestures, gesture_bindings):
+        """Analyze both hands together for combined gestures"""
+        if not self.left_hand_data or not self.right_hand_data:
+            return
+
+        left_finger_states = [finger['state'] for finger in self.left_hand_data['fingers']]
+        right_finger_states = [finger['state'] for finger in self.right_hand_data['fingers']]
+
+        # Recognize both-hand gesture
+        both_hands_gesture = self.recognition_engine.recognize_both_hands_gesture(
+            left_finger_states, right_finger_states, custom_gestures, active_gestures
+        )
+
+        # Execute if recognized
+        if both_hands_gesture and both_hands_gesture['confidence'] > 0.7:
+            self.recognition_engine.execute_gesture_action(both_hands_gesture['gesture'], gesture_bindings)
+
+            # Store for display
+            self.both_hands_gesture_data = both_hands_gesture
     
     def display_info(self, frame):
         """Display hand information on frame"""
@@ -151,8 +187,16 @@ class ComprehensiveHandGestureAnalyzer:
         if profile_data:
             active_count = len(profile_data.get('active_gestures', []))
             total_count = len(profile_data.get('gestures', {}))
-            cv2.putText(frame, f"Gestures: {active_count}/{total_count} active", 
+            cv2.putText(frame, f"Gestures: {active_count}/{total_count} active",
                        (10, height - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+        # Display both-hand gesture info
+        if hasattr(self, 'both_hands_gesture_data') and self.both_hands_gesture_data:
+            both_gesture = self.both_hands_gesture_data
+            cv2.putText(frame, f"Both Hands: {both_gesture['gesture']} ({both_gesture.get('total_fingers', 0)} fingers)",
+                       (width//2 - 150, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
+            cv2.putText(frame, f"Confidence: {both_gesture['confidence']:.2f}",
+                       (width//2 - 150, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 2)
     
     def draw_hand_info(self, frame, hand_data, x, y, side):
         """Draw hand information on frame"""
@@ -210,6 +254,7 @@ class ComprehensiveHandGestureAnalyzer:
                 # Reset hand data
                 self.left_hand_data = None
                 self.right_hand_data = None
+                self.both_hands_gesture_data = None
                 
                 if results.multi_hand_landmarks and results.multi_handedness:
                     for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
@@ -247,7 +292,11 @@ class ComprehensiveHandGestureAnalyzer:
                 
                 # Analyze hands for recording
                 self.analyze_hands_for_recording(frame)
-                
+
+                # Check for both-hand gestures if both hands are detected
+                if self.left_hand_data and self.right_hand_data:
+                    self.analyze_both_hands_gesture(profile_data, custom_gestures, active_gestures, gesture_bindings)
+
                 # Display information
                 self.display_info(frame)
                 

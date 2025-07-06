@@ -12,6 +12,8 @@ A comprehensive AI-powered hand gesture recognition system with profile collecti
 
 ### 🤖 AI-Powered Analysis
 - Individual finger detection (up/down/bent states)
+- **Single-hand gestures**: Traditional one-hand recognition
+- **Both-hand gestures**: Combined two-hand recognition (perfect for numbers 6-10)
 - Hand rotation tracking (360° analysis)
 - Finger spacing analysis
 - Distance measurements between landmarks
@@ -115,6 +117,23 @@ python main.py
    - Name: "right", Key: "d", Record: **Point right**
 4. Click "💾 Save Profile" then "🎮 Activate Profile"
 5. Done! Racing profile active with W/A/S/D controls
+
+### Number Profile Setup (1-10 with Both Hands)
+1. Press `s` to open Settings
+2. Click "📂 New Profile" and name it "Numbers"
+3. Add single-hand gestures (1-5):
+   - Name: "one", Key: "1", Type: "single", Record: **1 finger**
+   - Name: "two", Key: "2", Type: "single", Record: **2 fingers**
+   - Name: "three", Key: "3", Type: "single", Record: **3 fingers**
+   - Name: "four", Key: "4", Type: "single", Record: **4 fingers**
+   - Name: "five", Key: "5", Type: "single", Record: **5 fingers**
+4. Add both-hand gestures (6-10):
+   - Name: "six", Key: "6", Type: "both", Record: **5 right + 1 left**
+   - Name: "seven", Key: "7", Type: "both", Record: **5 right + 2 left**
+   - Name: "eight", Key: "8", Type: "both", Record: **5 right + 3 left**
+   - Name: "nine", Key: "9", Type: "both", Record: **5 right + 4 left**
+   - Name: "ten", Key: "0", Type: "both", Record: **5 right + 5 left**
+5. Save and activate profile - now you have 1-10 number recognition!
 
 ### Using Your Racing Profile
 1. Press `p` to open Profile Selector

@@ -114,13 +114,29 @@ class GestureRecorder:
 
         # Average the recorded patterns for stability
         avg_pattern = []
-        for i in range(5):  # 5 fingers
-            finger_values = [pattern[i] for pattern in self.recording_data if len(pattern) > i]
-            if finger_values:
-                avg_value = sum(finger_values) / len(finger_values)
-                avg_pattern.append(1 if avg_value > 0.5 else -1 if avg_value < -0.5 else 0)
-            else:
-                avg_pattern.append(0)
+
+        if self.recording_hand_type == 'both':
+            # For both-hand gestures, average the combined pattern
+            pattern_length = len(self.recording_data[0]) if self.recording_data else 11  # 1 + 5 + 5
+            for i in range(pattern_length):
+                values = [pattern[i] for pattern in self.recording_data if len(pattern) > i]
+                if values:
+                    avg_value = sum(values) / len(values)
+                    if i == 0:  # Total finger count
+                        avg_pattern.append(round(avg_value))
+                    else:  # Individual finger states
+                        avg_pattern.append(1 if avg_value > 0.5 else 0)
+                else:
+                    avg_pattern.append(0)
+        else:
+            # For single hand gestures
+            for i in range(5):  # 5 fingers
+                finger_values = [pattern[i] for pattern in self.recording_data if len(pattern) > i]
+                if finger_values:
+                    avg_value = sum(finger_values) / len(finger_values)
+                    avg_pattern.append(1 if avg_value > 0.5 else -1 if avg_value < -0.5 else 0)
+                else:
+                    avg_pattern.append(0)
 
         # Create gesture data
         gesture_data = {

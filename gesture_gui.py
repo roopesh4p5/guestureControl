@@ -127,7 +127,9 @@ class GestureSettingsGUI:
 
         # Instructions
         instructions = ttk.Label(gesture_section,
-                               text="Add gestures one by one. Each gesture will be recorded with a 3-2-1 countdown.",
+                               text="Add gestures one by one. Each gesture will be recorded with a 3-2-1 countdown.\n"
+                                    "• Single: Use one hand only\n"
+                                    "• Both: Use both hands together (great for numbers 6-10)",
                                font=('Arial', 10), foreground='darkblue')
         instructions.pack(pady=(0, 10))
 
@@ -143,9 +145,16 @@ class GestureSettingsGUI:
         self.key_binding_entry = ttk.Entry(add_frame, width=10)
         self.key_binding_entry.grid(row=0, column=3, padx=(0, 10))
 
+        # Hand type selection
+        ttk.Label(add_frame, text="Type:").grid(row=0, column=4, sticky='w', padx=(0, 5))
+        self.hand_type_var = tk.StringVar(value="single")
+        hand_combo = ttk.Combobox(add_frame, textvariable=self.hand_type_var,
+                                 values=["single", "both"], state="readonly", width=8)
+        hand_combo.grid(row=0, column=5, padx=(0, 10))
+
         self.record_button = ttk.Button(add_frame, text="🔴 Record Gesture",
                                        command=self.record_gesture_simple)
-        self.record_button.grid(row=0, column=4, padx=(0, 10))
+        self.record_button.grid(row=0, column=6, padx=(0, 10))
 
         # Recording status
         self.recording_status_label = ttk.Label(gesture_section,
@@ -160,14 +169,16 @@ class GestureSettingsGUI:
         ttk.Label(list_frame, text="Gestures in Profile:", font=('Arial', 12, 'bold')).pack(anchor='w')
 
         # Create treeview for gestures
-        columns = ('Name', 'Key')
+        columns = ('Name', 'Key', 'Type')
         self.gesture_tree = ttk.Treeview(list_frame, columns=columns, show='headings', height=8)
 
         self.gesture_tree.heading('Name', text='Gesture Name')
         self.gesture_tree.heading('Key', text='Key Binding')
+        self.gesture_tree.heading('Type', text='Hand Type')
 
-        self.gesture_tree.column('Name', width=200)
-        self.gesture_tree.column('Key', width=150)
+        self.gesture_tree.column('Name', width=150)
+        self.gesture_tree.column('Key', width=100)
+        self.gesture_tree.column('Type', width=100)
 
         # Scrollbar for treeview
         tree_scrollbar = ttk.Scrollbar(list_frame, orient='vertical',
@@ -308,6 +319,18 @@ class GestureSettingsGUI:
             if not result:
                 return
 
+        # Get hand type
+        hand_type = self.hand_type_var.get()
+
+        # Show appropriate message for both-hand recording
+        if hand_type == "both":
+            messagebox.showinfo("Both-Hand Recording",
+                               "You selected both-hand recording.\n\n"
+                               "During recording:\n"
+                               "• Show your gesture using BOTH hands\n"
+                               "• For numbers 6-10: Use both hands together\n"
+                               "• Example: 6 = 5 fingers (right) + 1 finger (left)")
+
         # Disable the record button and show status
         self.record_button.config(state='disabled', text="🔴 Recording...")
 
@@ -316,7 +339,7 @@ class GestureSettingsGUI:
             self.recording_session.start_session(self.profile_manager.current_profile)
 
         # Start recording immediately
-        self.recording_session.record_gesture(gesture_name, key_binding, "single")
+        self.recording_session.record_gesture(gesture_name, key_binding, hand_type)
 
         # Clear the form
         self.gesture_name_entry.delete(0, tk.END)
@@ -1089,7 +1112,9 @@ class GestureSettingsGUI:
 
                 for gesture_name, gesture_data in gestures.items():
                     key_binding = bindings.get(gesture_name, "Not set")
-                    self.gesture_tree.insert('', 'end', values=(gesture_name, key_binding))
+                    hand_type = gesture_data.get('hand_type', 'single')
+                    hand_type_display = "👥 Both" if hand_type == "both" else "👤 Single"
+                    self.gesture_tree.insert('', 'end', values=(gesture_name, key_binding, hand_type_display))
 
     # Individual gesture activation removed - now using profile-level activation
 

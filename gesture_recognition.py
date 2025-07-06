@@ -207,6 +207,63 @@ class GestureRecognitionEngine:
             'description': self.gesture_patterns[best_match]['description'] if best_match else 'Unknown',
             'is_custom': False
         }
+
+    def recognize_both_hands_gesture(self, left_finger_states, right_finger_states, custom_gestures=None, active_gestures=None):
+        """Recognize gestures using both hands combined"""
+        if not left_finger_states or not right_finger_states:
+            return None
+
+        # Combine both hand patterns
+        left_pattern = [1 if state > 0.5 else 0 for state in left_finger_states]
+        right_pattern = [1 if state > 0.5 else 0 for state in right_finger_states]
+
+        # Count total extended fingers
+        total_fingers = sum(left_pattern) + sum(right_pattern)
+
+        # Create combined pattern: [total_fingers, left_fingers, right_fingers, left_pattern..., right_pattern...]
+        combined_pattern = [total_fingers] + left_pattern + right_pattern
+
+        # Check against custom both-hand gestures
+        if custom_gestures and active_gestures:
+            best_match = None
+            best_score = 0
+
+            for gesture_name, gesture_data in custom_gestures.items():
+                if gesture_name not in active_gestures:
+                    continue
+
+                if gesture_data.get('hand_type', 'single') != 'both':
+                    continue
+
+                stored_pattern = gesture_data.get('pattern', [])
+                if len(stored_pattern) != len(combined_pattern):
+                    continue
+
+                # Calculate similarity
+                score = 0
+                for i, (expected, actual) in enumerate(zip(stored_pattern, combined_pattern)):
+                    if expected == actual:
+                        score += 1
+                    elif abs(expected - actual) <= 1:
+                        score += 0.5
+
+                confidence = score / len(combined_pattern)
+                if confidence > best_score and confidence > 0.7:
+                    best_score = confidence
+                    best_match = gesture_name
+
+            if best_match:
+                return {
+                    'gesture': best_match,
+                    'confidence': best_score,
+                    'pattern': combined_pattern,
+                    'description': f'Both hands: {custom_gestures[best_match].get("description", "Custom gesture")}',
+                    'is_custom': True,
+                    'hand_type': 'both',
+                    'total_fingers': total_fingers
+                }
+
+        return None
     
     def match_custom_gesture(self, pattern, custom_gestures, active_gestures, hand_type='single'):
         """Match against custom recorded gestures"""
