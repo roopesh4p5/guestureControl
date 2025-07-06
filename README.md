@@ -69,56 +69,57 @@ python main.py
 python main.py
 ```
 
-### 2. Create a Gesture Profile
+### 2. Create or Select a Profile
 1. Press `s` to open Settings
-2. Go to "📁 Profile Management" tab
-3. Click "📂 Create New Profile" or use a template:
-   - 🏎️ Racing Game
-   - 🎥 Video Player  
-   - 🎮 General Gaming
+2. **Step 1**: Select or create a profile:
+   - Use dropdown to select existing profile
+   - Click "📂 New Profile" for custom profile
+   - Click template buttons for quick setup:
+     - 🏎️ Racing (accelerate, brake, turn, nitro, horn)
+     - 🎥 Video (play/pause, volume, seek, fullscreen)
+     - 🎮 Gaming (jump, movement, actions)
 
-### 3. Record Gestures
-1. Go to "➕ Add Gesture" tab
-2. Select your profile
-3. For template gestures: Click "🔴 Record" next to any template
-4. For custom gestures:
-   - Enter gesture name (e.g., "accelerate")
-   - Enter key binding (e.g., "up", "space", "w")
-   - Choose hand type (Single/Both hands)
-   - Click "🔴 Start Recording"
+### 3. Add Gestures One by One
+1. **Step 2**: In the "Add Gestures" section:
+   - Enter gesture name (e.g., "accelerate", "left_turn")
+   - Enter key binding (e.g., "up", "a", "space")
+   - Click "🔴 Record Gesture"
 
-### 4. Recording Process
-1. **Get Ready**: Position your hand in camera view
-2. **Countdown**: Wait for 3-2-1 countdown
-3. **Record**: Hold your gesture steady for 3 seconds
-4. **Save**: Gesture automatically saved to profile
+### 4. Recording Process (Automatic)
+1. **3-2-1 Countdown**: Get ready and position your hand
+2. **Record**: Hold your gesture steady for 3 seconds
+3. **Auto-Save**: Gesture automatically saved and activated
+4. **Next Gesture**: Form clears, ready for next gesture
 
-### 5. Manage Gestures
-1. Go to "📋 Manage Gestures" tab
-2. View all gestures in current profile
-3. Activate/deactivate gestures
-4. Edit key bindings
-5. Delete unwanted gestures
+### 5. Build Your Collection
+- Repeat step 3-4 for each gesture you want
+- Each gesture is immediately available after recording
+- View all gestures in the list below the form
+- Activate/deactivate or delete gestures as needed
 
 ## 🎮 Example Usage Scenarios
 
-### Racing Game Setup
-1. Create "Racing Game" profile
-2. Record gestures:
-   - **Fist** → "up" (accelerate)
-   - **Open hand** → "down" (brake)
-   - **Point left** → "left" (turn left)
-   - **Point right** → "right" (turn right)
-   - **Thumbs up** → "space" (nitro)
+### Racing Game Setup (Step by Step)
+1. Press `s` to open Settings
+2. Click "🏎️ Racing" template button
+3. Add gestures one by one:
+   - Name: "accelerate", Key: "up", Record: **Fist gesture**
+   - Name: "brake", Key: "down", Record: **Open hand**
+   - Name: "left", Key: "left", Record: **Point left**
+   - Name: "right", Key: "right", Record: **Point right**
+   - Name: "nitro", Key: "space", Record: **Thumbs up**
+4. Done! Profile ready to use
 
-### Video Player Setup
-1. Create "Video Player" profile
-2. Record gestures:
-   - **Peace sign** → "space" (play/pause)
-   - **Thumbs up** → "up" (volume up)
-   - **Thumbs down** → "down" (volume down)
-   - **Point right** → "right" (seek forward)
-   - **OK sign** → "f" (fullscreen)
+### Video Player Setup (Step by Step)
+1. Press `s` to open Settings
+2. Click "🎥 Video" template button
+3. Add gestures one by one:
+   - Name: "play_pause", Key: "space", Record: **Peace sign**
+   - Name: "volume_up", Key: "up", Record: **Thumbs up**
+   - Name: "volume_down", Key: "down", Record: **Thumbs down**
+   - Name: "seek_forward", Key: "right", Record: **Point right**
+   - Name: "fullscreen", Key: "f", Record: **OK sign**
+4. Done! Profile ready to use
 
 ## 🔧 Key Binding Examples
 

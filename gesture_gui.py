@@ -66,26 +66,301 @@ class GestureSettingsGUI:
             self.settings_open = False
             return
 
-        # Create notebook for tabs
-        notebook = ttk.Notebook(self.settings_window)
-        notebook.pack(fill='both', expand=True, padx=10, pady=10)
+        # Create main container
+        main_frame = ttk.Frame(self.settings_window)
+        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
 
-        # Tab 1: Profile Management
-        profile_frame = ttk.Frame(notebook)
-        notebook.add(profile_frame, text="📁 Profile Management")
-        self.create_profile_management_tab(profile_frame)
+        # Create the simplified interface
+        self.create_simplified_interface(main_frame)
 
-        # Tab 2: Add Gesture to Profile
-        add_gesture_frame = ttk.Frame(notebook)
-        notebook.add(add_gesture_frame, text="➕ Add Gesture")
-        self.create_add_gesture_tab(add_gesture_frame)
+    def create_simplified_interface(self, parent):
+        """Create simplified, user-friendly interface"""
+        # Title
+        title_label = ttk.Label(parent, text="🎮 Gesture Profile Manager",
+                               font=('Arial', 18, 'bold'))
+        title_label.pack(pady=(0, 20))
 
-        # Tab 3: Manage Profile Gestures
-        manage_frame = ttk.Frame(notebook)
-        notebook.add(manage_frame, text="📋 Manage Gestures")
-        self.create_manage_gestures_tab(manage_frame)
+        # Step 1: Profile Selection/Creation
+        profile_section = ttk.LabelFrame(parent, text="Step 1: Select or Create Profile", padding=15)
+        profile_section.pack(fill='x', pady=(0, 15))
+
+        # Current profile display
+        current_frame = ttk.Frame(profile_section)
+        current_frame.pack(fill='x', pady=(0, 10))
+
+        ttk.Label(current_frame, text="Current Profile:",
+                 font=('Arial', 12, 'bold')).pack(side='left')
+
+        current_profile_name = self.profile_manager.current_profile or "None Selected"
+        self.current_profile_label = ttk.Label(current_frame, text=current_profile_name,
+                                              font=('Arial', 12), foreground='blue')
+        self.current_profile_label.pack(side='left', padx=(10, 0))
+
+        # Profile selection and creation
+        profile_controls = ttk.Frame(profile_section)
+        profile_controls.pack(fill='x')
+
+        # Profile dropdown
+        ttk.Label(profile_controls, text="Select Profile:").pack(side='left')
+        self.profile_var = tk.StringVar()
+        self.profile_dropdown = ttk.Combobox(profile_controls, textvariable=self.profile_var,
+                                           state='readonly', width=20)
+        self.profile_dropdown.pack(side='left', padx=(5, 10))
+        self.profile_dropdown.bind('<<ComboboxSelected>>', self.on_profile_selected)
+
+        # Profile buttons
+        ttk.Button(profile_controls, text="📂 New Profile",
+                  command=self.create_new_profile_simple).pack(side='left', padx=2)
+
+        ttk.Button(profile_controls, text="🏎️ Racing",
+                  command=lambda: self.create_template_profile_simple("Racing Game")).pack(side='left', padx=2)
+
+        ttk.Button(profile_controls, text="🎥 Video",
+                  command=lambda: self.create_template_profile_simple("Video Player")).pack(side='left', padx=2)
+
+        ttk.Button(profile_controls, text="🎮 Gaming",
+                  command=lambda: self.create_template_profile_simple("General Gaming")).pack(side='left', padx=2)
+
+        # Step 2: Add Gestures
+        gesture_section = ttk.LabelFrame(parent, text="Step 2: Add Gestures to Profile", padding=15)
+        gesture_section.pack(fill='both', expand=True, pady=(0, 15))
+
+        # Instructions
+        instructions = ttk.Label(gesture_section,
+                               text="Add gestures one by one. Each gesture will be recorded with a 3-2-1 countdown.",
+                               font=('Arial', 10), foreground='darkblue')
+        instructions.pack(pady=(0, 10))
+
+        # Add gesture form
+        add_frame = ttk.Frame(gesture_section)
+        add_frame.pack(fill='x', pady=(0, 10))
+
+        ttk.Label(add_frame, text="Gesture Name:").grid(row=0, column=0, sticky='w', padx=(0, 5))
+        self.gesture_name_entry = ttk.Entry(add_frame, width=15)
+        self.gesture_name_entry.grid(row=0, column=1, padx=(0, 10))
+
+        ttk.Label(add_frame, text="Key:").grid(row=0, column=2, sticky='w', padx=(0, 5))
+        self.key_binding_entry = ttk.Entry(add_frame, width=10)
+        self.key_binding_entry.grid(row=0, column=3, padx=(0, 10))
+
+        self.record_button = ttk.Button(add_frame, text="🔴 Record Gesture",
+                                       command=self.record_gesture_simple)
+        self.record_button.grid(row=0, column=4, padx=(0, 10))
+
+        # Recording status
+        self.recording_status_label = ttk.Label(gesture_section,
+                                               text="Ready to record gesture",
+                                               font=('Arial', 11))
+        self.recording_status_label.pack(pady=5)
+
+        # Gesture list
+        list_frame = ttk.Frame(gesture_section)
+        list_frame.pack(fill='both', expand=True, pady=(10, 0))
+
+        ttk.Label(list_frame, text="Gestures in Profile:", font=('Arial', 12, 'bold')).pack(anchor='w')
+
+        # Create treeview for gestures
+        columns = ('Name', 'Key', 'Status')
+        self.gesture_tree = ttk.Treeview(list_frame, columns=columns, show='headings', height=8)
+
+        self.gesture_tree.heading('Name', text='Gesture Name')
+        self.gesture_tree.heading('Key', text='Key Binding')
+        self.gesture_tree.heading('Status', text='Status')
+
+        self.gesture_tree.column('Name', width=150)
+        self.gesture_tree.column('Key', width=100)
+        self.gesture_tree.column('Status', width=100)
+
+        # Scrollbar for treeview
+        tree_scrollbar = ttk.Scrollbar(list_frame, orient='vertical',
+                                      command=self.gesture_tree.yview)
+        self.gesture_tree.configure(yscrollcommand=tree_scrollbar.set)
+
+        tree_container = ttk.Frame(list_frame)
+        tree_container.pack(fill='both', expand=True)
+
+        self.gesture_tree.pack(side='left', fill='both', expand=True)
+        tree_scrollbar.pack(side='right', fill='y')
+
+        # Gesture management buttons
+        gesture_buttons = ttk.Frame(gesture_section)
+        gesture_buttons.pack(fill='x', pady=(10, 0))
+
+        ttk.Button(gesture_buttons, text="✅ Activate",
+                  command=self.activate_selected_gesture).pack(side='left', padx=5)
+
+        ttk.Button(gesture_buttons, text="❌ Deactivate",
+                  command=self.deactivate_selected_gesture).pack(side='left', padx=5)
+
+        ttk.Button(gesture_buttons, text="🗑️ Delete",
+                  command=self.delete_selected_gesture).pack(side='left', padx=5)
+
+        # Step 3: Profile Status
+        status_section = ttk.LabelFrame(parent, text="Step 3: Profile Status", padding=15)
+        status_section.pack(fill='x')
+
+        self.status_label = ttk.Label(status_section,
+                                     text="Select a profile to get started",
+                                     font=('Arial', 11))
+        self.status_label.pack()
+
+        # Initialize
+        self.refresh_profile_dropdown()
+        self.refresh_gesture_list()
+        self.update_status()
+
+    def refresh_profile_dropdown(self):
+        """Refresh the profile dropdown list"""
+        if hasattr(self, 'profile_dropdown'):
+            profiles = self.profile_manager.get_profile_names()
+            self.profile_dropdown['values'] = profiles
+
+            # Set current selection
+            if self.profile_manager.current_profile in profiles:
+                self.profile_var.set(self.profile_manager.current_profile)
+            elif profiles:
+                self.profile_var.set('')
+
+    def on_profile_selected(self, event=None):
+        """Handle profile selection from dropdown"""
+        selected_profile = self.profile_var.get()
+        if selected_profile and selected_profile != self.profile_manager.current_profile:
+            if self.profile_manager.load_profile(selected_profile):
+                self.update_profile_labels()
+                self.refresh_gesture_list()
+                self.update_status()
+                print(f"✅ Loaded profile: {selected_profile}")
+
+    def create_new_profile_simple(self):
+        """Simple profile creation dialog"""
+        name = tk.simpledialog.askstring("New Profile", "Enter profile name:")
+        if name and name.strip():
+            name = name.strip()
+            if name in self.profile_manager.get_profile_names():
+                messagebox.showerror("Error", "Profile name already exists")
+                return
+
+            if self.profile_manager.create_profile(name, f"Custom profile: {name}"):
+                self.profile_manager.load_profile(name)
+                self.refresh_profile_dropdown()
+                self.update_profile_labels()
+                self.refresh_gesture_list()
+                self.update_status()
+                messagebox.showinfo("Success", f"Profile '{name}' created and loaded!")
+            else:
+                messagebox.showerror("Error", "Failed to create profile")
+
+    def create_template_profile_simple(self, template_name):
+        """Create and load a template profile"""
+        if template_name in self.profile_manager.get_profile_names():
+            # Ask if user wants to load existing or replace
+            result = messagebox.askyesnocancel("Profile Exists",
+                                             f"Profile '{template_name}' already exists.\n\n"
+                                             f"Yes: Load existing profile\n"
+                                             f"No: Replace with new template\n"
+                                             f"Cancel: Do nothing")
+            if result is None:  # Cancel
+                return
+            elif result:  # Yes - load existing
+                self.profile_manager.load_profile(template_name)
+                self.refresh_profile_dropdown()
+                self.update_profile_labels()
+                self.refresh_gesture_list()
+                self.update_status()
+                return
+            else:  # No - replace
+                self.profile_manager.delete_profile(template_name)
+
+        # Create new template
+        if self.profile_manager.create_template_profile(template_name):
+            self.profile_manager.load_profile(template_name)
+            self.refresh_profile_dropdown()
+            self.update_profile_labels()
+            self.refresh_gesture_list()
+            self.update_status()
+            messagebox.showinfo("Success", f"Template '{template_name}' created!\n\n"
+                                         f"Now you can add gestures one by one.")
+        else:
+            messagebox.showerror("Error", "Failed to create template profile")
+
+    def record_gesture_simple(self):
+        """Simple gesture recording - immediate recording with countdown"""
+        if not self.profile_manager.current_profile:
+            messagebox.showerror("Error", "Please select or create a profile first")
+            return
+
+        gesture_name = self.gesture_name_entry.get().strip()
+        key_binding = self.key_binding_entry.get().strip()
+
+        if not gesture_name:
+            messagebox.showerror("Error", "Please enter a gesture name")
+            self.gesture_name_entry.focus()
+            return
+
+        if not key_binding:
+            messagebox.showerror("Error", "Please enter a key binding")
+            self.key_binding_entry.focus()
+            return
+
+        # Check if gesture already exists
+        profile_data = self.profile_manager.get_current_profile_data()
+        if profile_data and gesture_name in profile_data.get('gestures', {}):
+            result = messagebox.askyesno("Gesture Exists",
+                                       f"Gesture '{gesture_name}' already exists. Replace it?")
+            if not result:
+                return
+
+        # Disable the record button and show status
+        self.record_button.config(state='disabled', text="🔴 Recording...")
+
+        # Start recording session if not active
+        if not self.recording_session.current_profile:
+            self.recording_session.start_session(self.profile_manager.current_profile)
+
+        # Start recording immediately
+        self.recording_session.record_gesture(gesture_name, key_binding, "single")
+
+        # Clear the form
+        self.gesture_name_entry.delete(0, tk.END)
+        self.key_binding_entry.delete(0, tk.END)
+
+        # Set up completion callback
+        def on_recording_complete():
+            try:
+                self.record_button.config(state='normal', text="🔴 Record Gesture")
+                self.refresh_gesture_list()
+                self.update_status()
+                self.gesture_name_entry.focus()  # Focus back to name entry for next gesture
+            except Exception as e:
+                print(f"Warning: Error in completion callback: {e}")
+
+        # Schedule GUI reset after recording completes
+        if self.settings_window:
+            self.settings_window.after(7000, on_recording_complete)  # 3s countdown + 3s recording + 1s buffer
+
+    def update_status(self):
+        """Update the status display"""
+        if not hasattr(self, 'status_label'):
+            return
+
+        if not self.profile_manager.current_profile:
+            self.status_label.config(text="❌ No profile selected - Create or select a profile to get started")
+            return
+
+        profile_data = self.profile_manager.get_current_profile_data()
+        if not profile_data:
+            self.status_label.config(text="❌ Profile data not available")
+            return
+
+        total_gestures = len(profile_data.get('gestures', {}))
+        active_gestures = len(profile_data.get('active_gestures', []))
+
+        if total_gestures == 0:
+            self.status_label.config(text=f"✅ Profile '{self.profile_manager.current_profile}' loaded - Add gestures to get started")
+        else:
+            self.status_label.config(text=f"✅ Profile '{self.profile_manager.current_profile}' - {active_gestures}/{total_gestures} gestures active")
     
-    def create_profile_management_tab(self, parent):
+    def create_profile_management_tab_OLD(self, parent):
         """Create profile management tab"""
         # Title
         title_label = ttk.Label(parent, text="📁 Gesture Profile Management", 
@@ -155,7 +430,7 @@ class GestureSettingsGUI:
         # Initial refresh
         self.refresh_profile_list()
     
-    def create_add_gesture_tab(self, parent):
+    def create_add_gesture_tab_OLD(self, parent):
         """Create add gesture tab"""
         # Title
         title_label = ttk.Label(parent, text="➕ Add Gesture to Profile", 
@@ -385,7 +660,7 @@ class GestureSettingsGUI:
         if self.settings_window:
             self.settings_window.after(7000, on_completion)  # 3s countdown + 3s recording + 1s buffer
 
-    def create_manage_gestures_tab(self, parent):
+    def create_manage_gestures_tab_OLD(self, parent):
         """Create manage gestures tab"""
         # Title
         title_label = ttk.Label(parent, text="📋 Manage Profile Gestures",
@@ -569,17 +844,17 @@ class GestureSettingsGUI:
 
     def update_profile_labels(self):
         """Update profile labels in the UI"""
-        current_profile = self.profile_manager.current_profile or "None"
+        current_profile = self.profile_manager.current_profile or "None Selected"
 
         if hasattr(self, 'current_profile_label') and self.current_profile_label:
             self.current_profile_label.config(text=current_profile)
-        if hasattr(self, 'selected_profile_label') and self.selected_profile_label:
-            self.selected_profile_label.config(text=current_profile)
-        if hasattr(self, 'manage_profile_label') and self.manage_profile_label:
-            self.manage_profile_label.config(text=current_profile)
+
+        # Update dropdown selection
+        if hasattr(self, 'profile_var') and self.profile_manager.current_profile:
+            self.profile_var.set(self.profile_manager.current_profile)
 
     def refresh_gesture_list(self):
-        """Refresh the gesture list in manage tab"""
+        """Refresh the gesture list"""
         if not hasattr(self, 'gesture_tree') or not self.gesture_tree:
             return
 
@@ -597,10 +872,9 @@ class GestureSettingsGUI:
 
                 for gesture_name, gesture_data in gestures.items():
                     key_binding = bindings.get(gesture_name, "Not set")
-                    status = "Active" if gesture_name in active_gestures else "Inactive"
-                    hand_type = gesture_data.get('hand_type', 'single')
+                    status = "✅ Active" if gesture_name in active_gestures else "❌ Inactive"
 
-                    self.gesture_tree.insert('', 'end', values=(gesture_name, key_binding, status, hand_type))
+                    self.gesture_tree.insert('', 'end', values=(gesture_name, key_binding, status))
 
     def activate_selected_gesture(self):
         """Activate the selected gesture"""
