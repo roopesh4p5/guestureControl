@@ -37,6 +37,11 @@ class GestureRecognitionEngine:
             self.keyboard_controller = pynput.keyboard.Controller()
         else:
             self.keyboard_controller = None
+
+        # Gesture execution throttling
+        self.last_executed_gesture = None
+        self.last_execution_time = 0
+        self.execution_cooldown = 1.0  # 1 second cooldown between same gesture executions
         
         # Known gesture patterns
         self.gesture_patterns = {
@@ -208,6 +213,8 @@ class GestureRecognitionEngine:
         best_match = None
         best_score = 0
 
+
+
         for gesture_name, gesture_data in custom_gestures.items():
             if gesture_name not in active_gestures:
                 continue
@@ -243,30 +250,48 @@ class GestureRecognitionEngine:
         return None
     
     def execute_gesture_action(self, gesture_name, gesture_bindings):
-        """Execute keyboard action for recognized gesture"""
+        """Execute keyboard action for recognized gesture with throttling"""
         if not self.keyboard_controller or not PYNPUT_AVAILABLE:
             return
 
-        if gesture_name in gesture_bindings:
-            key_binding = gesture_bindings[gesture_name]
-            try:
-                if key_binding.lower() in ['space', 'enter', 'tab', 'esc', 'backspace']:
-                    special_keys = {
-                        'space': pynput.keyboard.Key.space,
-                        'enter': pynput.keyboard.Key.enter,
-                        'tab': pynput.keyboard.Key.tab,
-                        'esc': pynput.keyboard.Key.esc,
-                        'backspace': pynput.keyboard.Key.backspace
-                    }
-                    self.keyboard_controller.press(special_keys[key_binding.lower()])
-                    self.keyboard_controller.release(special_keys[key_binding.lower()])
-                else:
-                    self.keyboard_controller.press(key_binding)
-                    self.keyboard_controller.release(key_binding)
+        if gesture_name not in gesture_bindings:
+            return
 
-                print(f"🎮 Executed: {gesture_name} -> {key_binding}")
-            except Exception as e:
-                print(f"❌ Error executing gesture action: {e}")
+        # Throttling: prevent same gesture from executing too frequently
+        import time
+        current_time = time.time()
+
+        if (self.last_executed_gesture == gesture_name and
+            current_time - self.last_execution_time < self.execution_cooldown):
+            return  # Skip execution due to cooldown
+
+        key_binding = gesture_bindings[gesture_name]
+        try:
+            if key_binding.lower() in ['space', 'enter', 'tab', 'esc', 'backspace', 'up', 'down', 'left', 'right']:
+                special_keys = {
+                    'space': pynput.keyboard.Key.space,
+                    'enter': pynput.keyboard.Key.enter,
+                    'tab': pynput.keyboard.Key.tab,
+                    'esc': pynput.keyboard.Key.esc,
+                    'backspace': pynput.keyboard.Key.backspace,
+                    'up': pynput.keyboard.Key.up,
+                    'down': pynput.keyboard.Key.down,
+                    'left': pynput.keyboard.Key.left,
+                    'right': pynput.keyboard.Key.right
+                }
+                self.keyboard_controller.press(special_keys[key_binding.lower()])
+                self.keyboard_controller.release(special_keys[key_binding.lower()])
+            else:
+                self.keyboard_controller.press(key_binding)
+                self.keyboard_controller.release(key_binding)
+
+            # Update throttling info
+            self.last_executed_gesture = gesture_name
+            self.last_execution_time = current_time
+
+            print(f"🎮 Executed: {gesture_name} -> {key_binding}")
+        except Exception as e:
+            print(f"❌ Error executing gesture action: {e}")
     
     def analyze_hand(self, landmarks, hand_label, custom_gestures=None, active_gestures=None, gesture_bindings=None):
         """Analyze a single hand and return comprehensive data"""
@@ -288,7 +313,7 @@ class GestureRecognitionEngine:
         gesture = self.recognize_gesture(finger_states, custom_gestures, active_gestures)
         
         # Execute gesture action if recognized
-        if gesture['is_custom'] and gesture['confidence'] > 0.8 and gesture_bindings:
+        if gesture['is_custom'] and gesture['confidence'] > 0.7 and gesture_bindings:
             self.execute_gesture_action(gesture['gesture'], gesture_bindings)
         
         return {

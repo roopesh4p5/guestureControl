@@ -134,9 +134,19 @@ class GestureProfileManager:
         """Get list of all profile names"""
         return list(self.profiles.keys())
     
-    def get_current_profile_data(self):
+    def get_current_profile_data(self, force_reload=False):
         """Get current profile data"""
         if self.current_profile and self.current_profile in self.profiles:
+            # Force reload from file to ensure we have the latest data
+            if force_reload:
+                try:
+                    with open(self.profiles[self.current_profile]['filepath'], 'r') as f:
+                        fresh_data = json.load(f)
+                    self.profiles[self.current_profile]['data'] = fresh_data
+                    return fresh_data
+                except Exception as e:
+                    print(f"Warning: Could not reload profile data: {e}")
+
             return self.profiles[self.current_profile]['data']
         return None
     
