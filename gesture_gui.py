@@ -241,11 +241,20 @@ class GestureSettingsGUI:
         """Handle profile selection from dropdown"""
         selected_profile = self.profile_var.get()
         if selected_profile and selected_profile != self.profile_manager.current_profile:
+            # Clear current profile first to avoid mixing
+            self.profile_manager.clear_current_profile()
+
+            # Load the selected profile
             if self.profile_manager.load_profile(selected_profile):
                 self.update_profile_labels()
                 self.refresh_gesture_list()
                 self.update_status()
-                print(f"✅ Loaded profile: {selected_profile}")
+                print(f"✅ Switched to profile: {selected_profile}")
+
+                # Debug: Show what gestures are in this profile
+                self.profile_manager.get_profile_gestures_only(selected_profile)
+            else:
+                print(f"❌ Failed to load profile: {selected_profile}")
 
     def create_new_profile_simple(self):
         """Simple profile creation dialog"""
@@ -624,9 +633,12 @@ class GestureSettingsGUI:
         ttk.Separator(parent, orient='horizontal').pack(fill='x', pady=5)
 
     def load_profile_quick(self, profile_name, selector_window):
-        """Quickly load and activate a profile"""
+        """Quickly load and activate a profile with clean switching"""
         try:
-            # Load profile
+            # Clear current profile first to ensure clean switch
+            self.profile_manager.clear_current_profile()
+
+            # Load the selected profile
             if self.profile_manager.load_profile(profile_name):
                 # Activate all gestures in the profile
                 profile_data = self.profile_manager.get_current_profile_data()
@@ -635,16 +647,22 @@ class GestureSettingsGUI:
                     profile_data['active_gestures'] = list(gestures.keys())
                     self.profile_manager.save_profile(profile_name, profile_data)
 
+                    # Debug: Show what gestures are loaded
+                    print(f"🔍 Loaded profile '{profile_name}' with gestures: {list(gestures.keys())}")
+
                     # Show success message
                     messagebox.showinfo("Profile Loaded",
                                        f"✅ Profile '{profile_name}' loaded and activated!\n\n"
-                                       f"🎮 {len(gestures)} gestures ready to use.")
+                                       f"🎮 {len(gestures)} gestures ready to use.\n\n"
+                                       f"Gestures: {', '.join(list(gestures.keys())[:5])}{'...' if len(gestures) > 5 else ''}")
 
                     # Close selector window
                     selector_window.destroy()
 
                     # Update any open settings window
                     self.update_profile_labels()
+                    self.refresh_gesture_list()
+                    self.update_status()
                 else:
                     messagebox.showerror("Error", "Failed to load profile data")
             else:

@@ -57,18 +57,29 @@ class GestureProfileManager:
             return False
     
     def load_profile(self, name: str):
-        """Load a specific profile"""
+        """Load a specific profile and clear any previous profile data"""
         if name in self.profiles:
             try:
+                # Clear current profile first to avoid mixing data
+                self.current_profile = None
+
+                # Load fresh data from file
                 with open(self.profiles[name]['filepath'], 'r') as f:
                     profile_data = json.load(f)
-                
+
+                # Update cache with fresh data
                 self.profiles[name]['data'] = profile_data
+
+                # Set as current profile only after successful load
                 self.current_profile = name
+
                 print(f"✅ Loaded profile: {name}")
+                print(f"📊 Profile contains {len(profile_data.get('gestures', {}))} gestures")
+
                 return profile_data
             except Exception as e:
                 print(f"❌ Error loading profile: {e}")
+                self.current_profile = None
                 return None
         return None
     
@@ -158,6 +169,13 @@ class GestureProfileManager:
 
             return self.profiles[self.current_profile]['data']
         return None
+
+    def reload_current_profile_from_disk(self):
+        """Force reload current profile from disk to ensure fresh data"""
+        if self.current_profile:
+            print(f"🔄 Reloading profile '{self.current_profile}' from disk...")
+            return self.get_current_profile_data(force_reload=True)
+        return None
     
     def create_template_profile(self, template_name: str):
         """Create template profiles with predefined gesture structures"""
@@ -232,3 +250,28 @@ class GestureProfileManager:
         for profile_name, profile_info in self.profiles.items():
             basic_info[profile_name] = profile_info.get('basic_info', {})
         return basic_info
+
+    def clear_current_profile(self):
+        """Clear current profile to ensure clean state"""
+        self.current_profile = None
+        print("🧹 Cleared current profile")
+
+    def get_profile_gestures_only(self, profile_name: str):
+        """Get only the gestures for a specific profile (for debugging)"""
+        if profile_name in self.profiles:
+            profile_data = self.profiles[profile_name]['data']
+            gestures = profile_data.get('gestures', {})
+            bindings = profile_data.get('bindings', {})
+            active = profile_data.get('active_gestures', [])
+
+            print(f"🔍 Profile '{profile_name}' debug info:")
+            print(f"   Gestures: {list(gestures.keys())}")
+            print(f"   Bindings: {bindings}")
+            print(f"   Active: {active}")
+
+            return {
+                'gestures': gestures,
+                'bindings': bindings,
+                'active_gestures': active
+            }
+        return None

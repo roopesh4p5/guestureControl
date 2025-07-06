@@ -268,9 +268,24 @@ class ComprehensiveHandGestureAnalyzer:
                         
                         # Get current profile data for gesture recognition
                         profile_data = self.profile_manager.get_current_profile_data()
-                        custom_gestures = profile_data.get('gestures', {}) if profile_data else {}
-                        active_gestures = set(profile_data.get('active_gestures', [])) if profile_data else set()
-                        gesture_bindings = profile_data.get('bindings', {}) if profile_data else {}
+                        if profile_data:
+                            custom_gestures = profile_data.get('gestures', {})
+                            active_gestures = set(profile_data.get('active_gestures', []))
+                            gesture_bindings = profile_data.get('bindings', {})
+
+                            # Debug: Occasionally show what profile is active (every 5 seconds)
+                            if hasattr(self, 'debug_timer'):
+                                self.debug_timer += 1
+                            else:
+                                self.debug_timer = 0
+
+                            if self.debug_timer % 150 == 0 and len(active_gestures) > 0:  # Every ~5 seconds at 30fps
+                                print(f"🎯 Active Profile: {self.profile_manager.current_profile}")
+                                print(f"🎯 Active Gestures: {list(active_gestures)}")
+                        else:
+                            custom_gestures = {}
+                            active_gestures = set()
+                            gesture_bindings = {}
                         
                         # Analyze hand
                         hand_data = self.recognition_engine.analyze_hand(

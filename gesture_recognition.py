@@ -99,34 +99,53 @@ class GestureRecognitionEngine:
         
         return avg_angle
     
-    def analyze_finger_state(self, landmarks, finger_idx):
+    def analyze_finger_state(self, landmarks, finger_idx, hand_label="Unknown"):
         """Analyze individual finger state with detailed information"""
         tip_idx = self.finger_tips[finger_idx]
         pip_idx = self.finger_pips[finger_idx]
         mcp_idx = self.finger_mcps[finger_idx]
-        
+
         tip = landmarks[tip_idx]
         pip = landmarks[pip_idx]
         mcp = landmarks[mcp_idx]
         wrist = landmarks[0]
-        
+
         tip_to_wrist = self.calculate_distance(tip, wrist)
         pip_to_wrist = self.calculate_distance(pip, wrist)
         mcp_to_wrist = self.calculate_distance(mcp, wrist)
-        
+
         finger_angle = self.calculate_angle(mcp, pip, tip)
-        
-        if finger_idx == 0:  # Thumb special case
-            if tip[0] > pip[0]:
-                state = 1
-                description = "Extended Right"
-            elif tip[0] < pip[0]:
-                state = -1
-                description = "Extended Left"
-            else:
-                state = 0
-                description = "Neutral"
+
+        if finger_idx == 0:  # Thumb special case - hand-aware detection
+            # Calculate thumb extension based on hand orientation
+            thumb_extension = tip[0] - pip[0]
+
+            # For MediaPipe, "Left" hand is actually the right hand in the image (mirrored)
+            # So we need to flip the logic
+            if hand_label == "Left":  # This is actually right hand in image
+                # For right hand: thumb extends left (negative direction) when open
+                if thumb_extension < -0.015:  # Lowered threshold for better detection
+                    state = 1
+                    description = "Extended (Right Hand)"
+                elif thumb_extension > 0.015:
+                    state = -1
+                    description = "Bent Inward (Right Hand)"
+                else:
+                    state = 0
+                    description = "Neutral (Right Hand)"
+            else:  # "Right" hand is actually left hand in image
+                # For left hand: thumb extends right (positive direction) when open
+                if thumb_extension > 0.015:  # Lowered threshold for better detection
+                    state = 1
+                    description = "Extended (Left Hand)"
+                elif thumb_extension < -0.015:
+                    state = -1
+                    description = "Bent Inward (Left Hand)"
+                else:
+                    state = 0
+                    description = "Neutral (Left Hand)"
         else:
+            # Other fingers - same logic for both hands
             if tip[1] < pip[1]:
                 if tip_to_wrist > pip_to_wrist:
                     state = 1
@@ -141,7 +160,7 @@ class GestureRecognitionEngine:
                 else:
                     state = -0.5
                     description = "Partially Bent"
-        
+
         return {
             'state': state,
             'description': description,
@@ -446,9 +465,9 @@ class GestureRecognitionEngine:
         """Analyze a single hand and return comprehensive data"""
         finger_data = []
         
-        # Analyze each finger
+        # Analyze each finger with hand awareness
         for i in range(5):
-            finger_info = self.analyze_finger_state(landmarks, i)
+            finger_info = self.analyze_finger_state(landmarks, i, hand_label)
             finger_data.append(finger_info)
         
         # Calculate hand rotation
