@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+"""
+Gesture Profile Manager
+Handles creation, loading, saving, and management of gesture profiles
+"""
+
+import json
+import os
+import time
+from typing import Dict, List, Optional
+
+
+class GestureProfileManager:
+    """Manages gesture profiles and collections"""
+    
+    def __init__(self):
+        self.profiles_dir = "gesture_profiles"
+        self.current_profile = None
+        self.profiles = {}
+        self.ensure_profiles_directory()
+        self.load_all_profiles()
+    
+    def ensure_profiles_directory(self):
+        """Create profiles directory if it doesn't exist"""
+        if not os.path.exists(self.profiles_dir):
+            os.makedirs(self.profiles_dir)
+            print(f"📁 Created profiles directory: {self.profiles_dir}")
+    
+    def create_profile(self, name: str, description: str = ""):
+        """Create a new gesture profile"""
+        profile = {
+            'name': name,
+            'description': description,
+            'gestures': {},
+            'bindings': {},
+            'active_gestures': [],
+            'created_at': time.time(),
+            'modified_at': time.time()
+        }
+        
+        filename = f"{name.lower().replace(' ', '_')}.json"
+        filepath = os.path.join(self.profiles_dir, filename)
+        
+        try:
+            with open(filepath, 'w') as f:
+                json.dump(profile, f, indent=2)
+            
+            self.profiles[name] = {
+                'data': profile,
+                'filepath': filepath
+            }
+            
+            print(f"✅ Created profile: {name}")
+            return True
+        except Exception as e:
+            print(f"❌ Error creating profile: {e}")
+            return False
+    
+    def load_profile(self, name: str):
+        """Load a specific profile"""
+        if name in self.profiles:
+            try:
+                with open(self.profiles[name]['filepath'], 'r') as f:
+                    profile_data = json.load(f)
+                
+                self.profiles[name]['data'] = profile_data
+                self.current_profile = name
+                print(f"✅ Loaded profile: {name}")
+                return profile_data
+            except Exception as e:
+                print(f"❌ Error loading profile: {e}")
+                return None
+        return None
+    
+    def save_profile(self, name: str, profile_data: dict):
+        """Save profile data"""
+        if name in self.profiles:
+            try:
+                profile_data['modified_at'] = time.time()
+                
+                with open(self.profiles[name]['filepath'], 'w') as f:
+                    json.dump(profile_data, f, indent=2)
+                
+                self.profiles[name]['data'] = profile_data
+                print(f"✅ Saved profile: {name}")
+                return True
+            except Exception as e:
+                print(f"❌ Error saving profile: {e}")
+                return False
+        return False
+    
+    def load_all_profiles(self):
+        """Load all available profiles"""
+        self.profiles = {}
+        
+        if not os.path.exists(self.profiles_dir):
+            return
+        
+        for filename in os.listdir(self.profiles_dir):
+            if filename.endswith('.json'):
+                filepath = os.path.join(self.profiles_dir, filename)
+                try:
+                    with open(filepath, 'r') as f:
+                        profile_data = json.load(f)
+                    
+                    profile_name = profile_data.get('name', filename[:-5])
+                    self.profiles[profile_name] = {
+                        'data': profile_data,
+                        'filepath': filepath
+                    }
+                except Exception as e:
+                    print(f"⚠️  Error loading profile {filename}: {e}")
+        
+        print(f"📁 Loaded {len(self.profiles)} profiles")
+    
+    def delete_profile(self, name: str):
+        """Delete a profile"""
+        if name in self.profiles:
+            try:
+                os.remove(self.profiles[name]['filepath'])
+                del self.profiles[name]
+                
+                if self.current_profile == name:
+                    self.current_profile = None
+                
+                print(f"🗑️  Deleted profile: {name}")
+                return True
+            except Exception as e:
+                print(f"❌ Error deleting profile: {e}")
+                return False
+        return False
+    
+    def get_profile_names(self):
+        """Get list of all profile names"""
+        return list(self.profiles.keys())
+    
+    def get_current_profile_data(self):
+        """Get current profile data"""
+        if self.current_profile and self.current_profile in self.profiles:
+            return self.profiles[self.current_profile]['data']
+        return None
+    
+    def create_template_profile(self, template_name: str):
+        """Create template profiles with predefined gesture structures"""
+        templates = {
+            "Racing Game": {
+                "description": "Profile for racing games with directional controls",
+                "template_gestures": {
+                    "accelerate": {"key": "up", "description": "Accelerate"},
+                    "brake": {"key": "down", "description": "Brake/Reverse"},
+                    "turn_left": {"key": "left", "description": "Turn Left"},
+                    "turn_right": {"key": "right", "description": "Turn Right"},
+                    "nitro": {"key": "space", "description": "Nitro Boost"},
+                    "horn": {"key": "h", "description": "Horn"}
+                }
+            },
+            "Video Player": {
+                "description": "Profile for video player controls",
+                "template_gestures": {
+                    "play_pause": {"key": "space", "description": "Play/Pause"},
+                    "volume_up": {"key": "up", "description": "Volume Up"},
+                    "volume_down": {"key": "down", "description": "Volume Down"},
+                    "seek_forward": {"key": "right", "description": "Seek Forward"},
+                    "seek_backward": {"key": "left", "description": "Seek Backward"},
+                    "fullscreen": {"key": "f", "description": "Toggle Fullscreen"}
+                }
+            },
+            "General Gaming": {
+                "description": "General gaming profile with common controls",
+                "template_gestures": {
+                    "jump": {"key": "space", "description": "Jump"},
+                    "move_forward": {"key": "w", "description": "Move Forward"},
+                    "move_backward": {"key": "s", "description": "Move Backward"},
+                    "move_left": {"key": "a", "description": "Move Left"},
+                    "move_right": {"key": "d", "description": "Move Right"},
+                    "action": {"key": "e", "description": "Action/Interact"}
+                }
+            }
+        }
+        
+        if template_name not in templates:
+            return False
+        
+        template = templates[template_name]
+        
+        # Create the profile
+        if self.create_profile(template_name, template["description"]):
+            # Add template gesture placeholders
+            profile_data = self.get_current_profile_data()
+            if profile_data:
+                profile_data['template_gestures'] = template["template_gestures"]
+                self.save_profile(template_name, profile_data)
+            return True
+        
+        return False
+    
+    def get_template_gestures(self, profile_name: str):
+        """Get template gestures for a profile"""
+        if profile_name in self.profiles:
+            profile_data = self.profiles[profile_name]['data']
+            return profile_data.get('template_gestures', {})
+        return {}
