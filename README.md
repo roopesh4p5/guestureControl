@@ -172,6 +172,18 @@ pip install opencv-python mediapipe numpy pynput
 - Re-record gestures if accuracy is low
 - Check gesture activation status
 
+### Threading/GUI Issues
+- If you see "RuntimeError: main thread is not in main loop":
+  - This has been fixed in the latest version
+  - Restart the application if the error persists
+  - The recording system now uses thread-safe GUI updates
+
+### Recording Issues
+- If recording countdown stops unexpectedly:
+  - Check console for error messages
+  - Ensure camera is working properly
+  - Try closing and reopening the settings window
+
 ## 🚀 Advanced Features
 
 ### Profile Collections

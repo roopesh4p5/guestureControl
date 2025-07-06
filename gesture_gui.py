@@ -302,16 +302,38 @@ class GestureSettingsGUI:
         self.start_gesture_recording_gui()
     
     def update_recording_status(self, message: str, color: str = 'black'):
-        """Update recording status in GUI"""
+        """Update recording status in GUI (thread-safe)"""
         if hasattr(self, 'recording_status_label') and self.recording_status_label:
-            self.recording_status_label.config(text=message, foreground=color)
+            # Use after_idle to ensure GUI updates happen in main thread
+            if hasattr(self, 'root') and self.root:
+                self.root.after_idle(lambda: self._update_status_label(message, color))
+            elif hasattr(self, 'settings_window') and self.settings_window:
+                self.settings_window.after_idle(lambda: self._update_status_label(message, color))
+
+    def _update_status_label(self, message: str, color: str):
+        """Internal method to update status label (called from main thread)"""
+        if hasattr(self, 'recording_status_label') and self.recording_status_label:
+            try:
+                self.recording_status_label.config(text=message, foreground=color)
+            except Exception as e:
+                print(f"Warning: Could not update status label: {e}")
     
     def reset_recording_gui(self):
-        """Reset recording GUI elements"""
-        if hasattr(self, 'record_button') and self.record_button:
-            self.record_button.config(state='normal', text="🔴 Start Recording")
-        if hasattr(self, 'recording_status_label') and self.recording_status_label:
-            self.recording_status_label.config(text="Ready to record gesture", foreground='black')
+        """Reset recording GUI elements (thread-safe)"""
+        if hasattr(self, 'root') and self.root:
+            self.root.after_idle(self._reset_gui_elements)
+        elif hasattr(self, 'settings_window') and self.settings_window:
+            self.settings_window.after_idle(self._reset_gui_elements)
+
+    def _reset_gui_elements(self):
+        """Internal method to reset GUI elements (called from main thread)"""
+        try:
+            if hasattr(self, 'record_button') and self.record_button:
+                self.record_button.config(state='normal', text="🔴 Start Recording")
+            if hasattr(self, 'recording_status_label') and self.recording_status_label:
+                self.recording_status_label.config(text="Ready to record gesture", foreground='black')
+        except Exception as e:
+            print(f"Warning: Could not reset GUI elements: {e}")
     
     def start_gesture_recording_gui(self):
         """Start gesture recording from GUI"""
@@ -352,12 +374,16 @@ class GestureSettingsGUI:
         
         # Set up completion callback to reset GUI
         def on_completion():
-            self.reset_recording_gui()
-            self.refresh_gesture_list()
-            self.refresh_template_gestures()
-        
-        # Schedule GUI reset after recording completes
-        self.settings_window.after(7000, on_completion)  # 3s countdown + 3s recording + 1s buffer
+            try:
+                self.reset_recording_gui()
+                self.refresh_gesture_list()
+                self.refresh_template_gestures()
+            except Exception as e:
+                print(f"Warning: Error in completion callback: {e}")
+
+        # Schedule GUI reset after recording completes (thread-safe)
+        if self.settings_window:
+            self.settings_window.after(7000, on_completion)  # 3s countdown + 3s recording + 1s buffer
 
     def create_manage_gestures_tab(self, parent):
         """Create manage gestures tab"""
@@ -672,12 +698,21 @@ class GestureSettingsGUI:
             self.settings_window = None
 
     def update_tkinter(self):
-        """Update tkinter GUI"""
+        """Update tkinter GUI (thread-safe)"""
         if hasattr(self, 'root') and self.root:
             try:
+                # Only update if we're in the main thread
                 self.root.update_idletasks()
                 self.root.update()
-            except:
+            except Exception as e:
+                # Silently handle GUI update errors to prevent crashes
+                pass
+
+        # Also update settings window if open
+        if hasattr(self, 'settings_window') and self.settings_window:
+            try:
+                self.settings_window.update_idletasks()
+            except Exception as e:
                 pass
 
     def cleanup(self):

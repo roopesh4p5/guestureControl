@@ -259,8 +259,12 @@ class ComprehensiveHandGestureAnalyzer:
                 elif key == ord('s'):
                     self.gui.open_settings_window()
                 
-                # Update GUI
-                self.gui.update_tkinter()
+                # Update GUI (with error handling)
+                try:
+                    self.gui.update_tkinter()
+                except Exception as e:
+                    # Don't let GUI errors crash the main loop
+                    pass
 
         except KeyboardInterrupt:
             print("\n🛑 Interrupted by user")

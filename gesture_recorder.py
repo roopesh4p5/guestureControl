@@ -52,10 +52,14 @@ class GestureRecorder:
         if self.recording_countdown > 0:
             message = f"Recording in {self.recording_countdown}..."
             print(f"⏰ {self.recording_countdown}...")
-            
+
+            # Safely call status callback
             if self.status_callback:
-                self.status_callback(message, 'orange')
-            
+                try:
+                    self.status_callback(message, 'orange')
+                except Exception as e:
+                    print(f"Warning: Status callback error: {e}")
+
             self.recording_countdown -= 1
             # Schedule next countdown
             self.recording_timer = threading.Timer(1.0, self.countdown_timer)
@@ -63,10 +67,14 @@ class GestureRecorder:
         else:
             message = "🔴 Recording NOW! Hold your gesture steady..."
             print(message)
-            
+
+            # Safely call status callback
             if self.status_callback:
-                self.status_callback(message, 'red')
-            
+                try:
+                    self.status_callback(message, 'red')
+                except Exception as e:
+                    print(f"Warning: Status callback error: {e}")
+
             self.recording_gesture = True
             # Stop recording after 3 seconds
             self.recording_timer = threading.Timer(3.0, self.stop_recording_auto)
@@ -98,7 +106,10 @@ class GestureRecorder:
             message = "❌ No gesture data captured!"
             print(message)
             if self.status_callback:
-                self.status_callback(message, 'red')
+                try:
+                    self.status_callback(message, 'red')
+                except Exception as e:
+                    print(f"Warning: Status callback error: {e}")
             return False
 
         # Average the recorded patterns for stability
@@ -124,12 +135,18 @@ class GestureRecorder:
         print(success_message)
         print(f"🔗 Key binding: {self.recording_key_binding}")
         print(f"📊 Pattern: {avg_pattern}")
-        
+
         if self.status_callback:
-            self.status_callback(success_message, 'green')
-        
+            try:
+                self.status_callback(success_message, 'green')
+            except Exception as e:
+                print(f"Warning: Status callback error: {e}")
+
         if self.completion_callback:
-            self.completion_callback(self.recording_name, gesture_data)
+            try:
+                self.completion_callback(self.recording_name, gesture_data)
+            except Exception as e:
+                print(f"Warning: Completion callback error: {e}")
 
         return True
     
@@ -137,14 +154,17 @@ class GestureRecorder:
         """Cancel current recording"""
         if self.recording_timer:
             self.recording_timer.cancel()
-        
+
         self.recording_gesture = False
         self.recording_data = []
-        
+
         message = "❌ Recording cancelled"
         print(message)
         if self.status_callback:
-            self.status_callback(message, 'orange')
+            try:
+                self.status_callback(message, 'orange')
+            except Exception as e:
+                print(f"Warning: Status callback error: {e}")
     
     def is_recording(self):
         """Check if currently recording"""
