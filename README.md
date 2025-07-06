@@ -91,11 +91,17 @@ python main.py
 3. **Auto-Save**: Gesture automatically saved and activated
 4. **Next Gesture**: Form clears, ready for next gesture
 
-### 5. Build Your Collection
+### 5. Build Your Collection & Activate Profile
 - Repeat step 3-4 for each gesture you want
-- Each gesture is immediately available after recording
-- View all gestures in the list below the form
-- Activate/deactivate or delete gestures as needed
+- Each gesture is added to your profile
+- Click "💾 Save Profile" when done adding gestures
+- Click "🎮 Activate Profile" to use all gestures
+
+### 6. Switch Between Profiles
+- Press 'p' in camera window to open Profile Selector
+- See all profiles with their gestures and key bindings
+- Select and activate any profile
+- All gestures in that profile become active
 
 ## 🎮 Example Usage Scenarios
 
@@ -103,12 +109,18 @@ python main.py
 1. Press `s` to open Settings
 2. Click "🏎️ Racing" template button
 3. Add gestures one by one:
-   - Name: "accelerate", Key: "up", Record: **Fist gesture**
-   - Name: "brake", Key: "down", Record: **Open hand**
-   - Name: "left", Key: "left", Record: **Point left**
-   - Name: "right", Key: "right", Record: **Point right**
-   - Name: "nitro", Key: "space", Record: **Thumbs up**
-4. Done! Profile ready to use
+   - Name: "accelerate", Key: "w", Record: **Fist gesture**
+   - Name: "brake", Key: "s", Record: **Open hand**
+   - Name: "left", Key: "a", Record: **Point left**
+   - Name: "right", Key: "d", Record: **Point right**
+4. Click "💾 Save Profile" then "🎮 Activate Profile"
+5. Done! Racing profile active with W/A/S/D controls
+
+### Using Your Racing Profile
+1. Press `p` to open Profile Selector
+2. Select "Racing Game" profile
+3. Click "✅ Activate Selected"
+4. All 4 gestures now control your racing game!
 
 ### Video Player Setup (Step by Step)
 1. Press `s` to open Settings
@@ -151,9 +163,10 @@ python main.py
 
 ## 🎯 Controls
 
-- **`s`** - Open Settings panel
+- **`s`** - Open Settings panel (create/edit profiles and gestures)
+- **`p`** - Open Profile Selector (switch between profiles)
 - **`q`** - Quit application
-- **Mouse** - Interact with GUI settings
+- **Mouse** - Interact with GUI windows
 
 ## 🔍 Troubleshooting
 

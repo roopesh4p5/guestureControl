@@ -71,6 +71,7 @@ class ComprehensiveHandGestureAnalyzer:
         print("   • Left hand: Top-left corner")
         print("   • Right hand: Top-right corner")
         print("   • Press 's' to open Settings")
+        print("   • Press 'p' to open Profile Selector")
         print("   • Press 'q' to quit")
         print("=" * 60)
     
@@ -188,6 +189,7 @@ class ComprehensiveHandGestureAnalyzer:
 
         print("🎮 Gesture Recognition Active!")
         print("📋 Press 's' to open Settings")
+        print("🎯 Press 'p' to open Profile Selector")
         print("🔴 Press 'q' to quit")
 
         try:
@@ -258,6 +260,8 @@ class ComprehensiveHandGestureAnalyzer:
                     break
                 elif key == ord('s'):
                     self.gui.open_settings_window()
+                elif key == ord('p'):
+                    self.gui.open_profile_selector()
                 
                 # Update GUI (with error handling)
                 try:

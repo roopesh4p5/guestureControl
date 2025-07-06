@@ -246,10 +246,10 @@ class GestureRecordingSession:
                 
                 # Add key binding
                 profile_data['bindings'][gesture_name] = gesture_data['key_binding']
-                
-                # Activate the gesture
-                if gesture_name not in profile_data['active_gestures']:
-                    profile_data['active_gestures'].append(gesture_name)
+
+                # Auto-activate all gestures in profile (profile-level activation)
+                all_gestures = list(profile_data['gestures'].keys())
+                profile_data['active_gestures'] = all_gestures
                 
                 # Save profile
                 self.profile_manager.save_profile(self.current_profile, profile_data)
